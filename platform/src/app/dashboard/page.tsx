@@ -8,7 +8,6 @@ import {
   Building2, 
   Users, 
   Calendar, 
-  DollarSign, 
   Plus,
   Settings,
   LogOut,
@@ -17,7 +16,6 @@ import {
   BarChart3
 } from 'lucide-react';
 import BookingManagementLink from '@/components/BookingManagementLink';
-import PublicRestaurantLink from '@/components/PublicRestaurantLink';
 
 interface User {
   id: number;
@@ -126,7 +124,7 @@ const DashboardPage = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-8">
           <Card className="hover-lift">
             <CardContent className="p-3 sm:p-6">
               <div className="flex items-center space-x-2 sm:space-x-4">
@@ -169,41 +167,21 @@ const DashboardPage = () => {
             </CardContent>
           </Card>
 
-          <Card className="hover-lift">
-            <CardContent className="p-3 sm:p-6">
-              <div className="flex items-center space-x-2 sm:space-x-4">
-                <div className="p-2 sm:p-3 bg-green-100 rounded-lg">
-                  <DollarSign className="h-4 w-4 sm:h-6 sm:w-6 text-green-600" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-lg sm:text-2xl font-bold text-gray-900">0 ₽</p>
-                  <p className="text-xs sm:text-sm text-gray-600">Доход</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
-        {/* Booking Management and Public Pages */}
+        {/* Booking Management */}
         <div className="mb-6 sm:mb-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6">
             <BookingManagementLink 
               restaurantId="1"
               restaurantName="Мой ресторан"
               bookingCount={12}
             />
-            <PublicRestaurantLink
-              restaurantId="1"
-              restaurantName="Мой ресторан"
-              publicUrl={`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/restaurant/1`}
-              viewCount={156}
-              bookingCount={23}
-            />
           </div>
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 gap-4 sm:gap-6">
           <Card className="hover-lift">
             <CardHeader className="pb-3 sm:pb-6">
               <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
@@ -279,27 +257,6 @@ const DashboardPage = () => {
                   Настройки
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="hover-lift">
-            <CardHeader className="pb-3 sm:pb-6">
-              <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
-                <Settings className="h-5 w-5 text-restero-green" />
-                <span>Настройки</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4 text-sm sm:text-base">
-                Управляйте настройками аккаунта, тарифами и доступом сотрудников.
-              </p>
-              <Button 
-                variant="outline" 
-                className="w-full h-10 sm:h-11 text-sm sm:text-base"
-                onClick={() => router.push('/dashboard/settings')}
-              >
-                Открыть настройки
-              </Button>
             </CardContent>
           </Card>
         </div>
