@@ -1,0 +1,11 @@
+.custom-select-trigger {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+  
+  .custom-select-content {
+    /* z-index: 100;
+    background: white; */
+  }

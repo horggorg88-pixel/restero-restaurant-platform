@@ -1,0 +1,15 @@
+# Переменные окружения для Vercel с Redis
+# Добавьте эти переменные в настройках проекта Vercel
+
+# Redis Configuration
+REDIS_URL=redis://default:lPz6dcqqZaZNIDtQ2f2jHeDwYAHdpPvL@redis-19619.c241.us-east-1-4.ec2.redns.redis-cloud.com:19619
+
+# JWT Secret
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+
+# Email Configuration (optional)
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=noreply@restero.com
