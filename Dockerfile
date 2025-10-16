@@ -52,14 +52,17 @@ RUN mkdir -p /app/api/bootstrap/cache && \
 # Устанавливаем зависимости PHP
 RUN cd api && COMPOSER_IGNORE_PLATFORM_REQS=1 COMPOSER_DISABLE_XDEBUG_WARN=1 composer install --no-dev --optimize-autoloader --no-scripts
 
-# Настраиваем Laravel
+# Настраиваем Laravel (без Apiato команд)
 RUN cd api && \
-    php artisan key:generate --force && \
-    php artisan config:cache && \
-    php artisan route:cache && \
-    php artisan view:cache && \
     touch database/database.sqlite && \
-    php artisan migrate --force
+    echo "APP_KEY=" > .env && \
+    php -r "echo 'APP_KEY=base64:' . base64_encode(random_bytes(32)) . PHP_EOL;" >> .env && \
+    echo "APP_ENV=production" >> .env && \
+    echo "APP_DEBUG=false" >> .env && \
+    echo "DB_CONNECTION=sqlite" >> .env && \
+    echo "DB_DATABASE=/app/api/database/database.sqlite" >> .env && \
+    echo "CACHE_DRIVER=file" >> .env && \
+    echo "SESSION_DRIVER=file" >> .env
 
 # Собираем Next.js приложение
 RUN cd platform && npm run build
