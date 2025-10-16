@@ -151,7 +151,7 @@ const AnalyticsPage = () => {
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Общая выручка</p>
-                      <p className="text-2xl font-bold text-gray-900">{analytics.totalRevenue.toLocaleString()} ₽</p>
+                      <p className="text-2xl font-bold text-gray-900">{(analytics.totalRevenue || 0).toLocaleString()} ₽</p>
                     </div>
                   </div>
                 </CardContent>
@@ -165,7 +165,7 @@ const AnalyticsPage = () => {
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Средняя длительность</p>
-                      <p className="text-2xl font-bold text-gray-900">{analytics.averageBookingDuration} мин</p>
+                      <p className="text-2xl font-bold text-gray-900">{analytics.averageBookingDuration || 0} мин</p>
                     </div>
                   </div>
                 </CardContent>
@@ -180,7 +180,7 @@ const AnalyticsPage = () => {
                     <div>
                       <p className="text-sm text-gray-600">Средний чек</p>
                       <p className="text-2xl font-bold text-gray-900">
-                        {analytics.totalBookings > 0 ? Math.round(analytics.totalRevenue / analytics.totalBookings).toLocaleString() : 0} ₽
+                        {(analytics.totalBookings || 0) > 0 ? Math.round((analytics.totalRevenue || 0) / (analytics.totalBookings || 1)).toLocaleString() : 0} ₽
                       </p>
                     </div>
                   </div>
@@ -199,7 +199,7 @@ const AnalyticsPage = () => {
                 </CardHeader>
                 
                 <CardContent>
-                  {analytics.topRestaurants.length === 0 ? (
+                  {!analytics.topRestaurants || analytics.topRestaurants.length === 0 ? (
                     <div className="text-center py-8">
                       <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-600">Нет данных о ресторанах</p>
@@ -238,7 +238,7 @@ const AnalyticsPage = () => {
                 </CardHeader>
                 
                 <CardContent>
-                  {analytics.bookingsByMonth.length === 0 ? (
+                  {!analytics.bookingsByMonth || analytics.bookingsByMonth.length === 0 ? (
                     <div className="text-center py-8">
                       <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-600">Нет данных за последние месяцы</p>
@@ -273,7 +273,7 @@ const AnalyticsPage = () => {
               </CardHeader>
               
               <CardContent>
-                {analytics.bookingsByDay.length === 0 ? (
+                {!analytics.bookingsByDay || analytics.bookingsByDay.length === 0 ? (
                   <div className="text-center py-8">
                     <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-600">Нет данных по дням недели</p>

@@ -26,14 +26,14 @@ export async function GET(request: NextRequest) {
 
     const { userId } = decoded;
 
-    // Возвращаем демо-аналитику
+    // Возвращаем демо-аналитику с правильной структурой
     const analytics = {
-      totalRestaurants: 0,
       totalBookings: 0,
       totalRevenue: 0,
+      averageBookingDuration: 0,
       topRestaurants: [],
       bookingsByMonth: [],
-      revenueByMonth: []
+      bookingsByDay: []
     };
 
     return NextResponse.json(analytics);
