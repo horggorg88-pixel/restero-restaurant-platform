@@ -9,7 +9,6 @@ import {
   ExternalLink, 
   ArrowLeft, 
   Users, 
-  BarChart3,
   Clock,
   CheckCircle
 } from 'lucide-react';
@@ -21,20 +20,51 @@ const BookingManagementPage = () => {
   const [stats, setStats] = useState({
     totalBookings: 0,
     activeBookings: 0,
-    todayBookings: 0,
-    accuracy: 98
+    todayBookings: 0
   });
 
   useEffect(() => {
-    // Здесь можно загрузить статистику бронирований
-    // Пока используем моковые данные
-    setStats({
-      totalBookings: 156,
-      activeBookings: 23,
-      todayBookings: 8,
-      accuracy: 98
-    });
+    // Загружаем реальную статистику бронирований
+    fetchBookingStats();
   }, []);
+
+  const fetchBookingStats = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch('/api/bookings/stats', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setStats({
+          totalBookings: data.totalBookings || 0,
+          activeBookings: data.activeBookings || 0,
+          todayBookings: data.todayBookings || 0
+        });
+      } else {
+        // Если API недоступен, показываем нули
+        setStats({
+          totalBookings: 0,
+          activeBookings: 0,
+          todayBookings: 0
+        });
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки статистики бронирований:', error);
+      // При ошибке показываем нули
+      setStats({
+        totalBookings: 0,
+        activeBookings: 0,
+        todayBookings: 0
+      });
+    }
+  };
 
   const handleOpenAdminPanel = async () => {
     setIsLoading(true);
@@ -93,7 +123,7 @@ const BookingManagementPage = () => {
         <div className="max-w-4xl mx-auto space-y-8">
           
           {/* Статистика */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="hover-lift">
               <CardContent className="p-6">
                 <div className="flex items-center space-x-4">
@@ -136,19 +166,6 @@ const BookingManagementPage = () => {
               </CardContent>
             </Card>
 
-            <Card className="hover-lift">
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-4">
-                  <div className="p-3 bg-green-100 rounded-lg">
-                    <BarChart3 className="h-6 w-6 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900">{stats.accuracy}%</p>
-                    <p className="text-sm text-gray-600">Точность</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
           {/* Основная карточка */}
