@@ -63,8 +63,10 @@ RUN cd api && \
 # Собираем Next.js приложение
 RUN cd platform && npm run build
 
-# Собираем админ-панель
-RUN cd admin/gills-moscow-front && npm run build
+# Собираем админ-панель и копируем в Next.js public
+RUN cd admin/gills-moscow-front && npm run build && \
+    mkdir -p /app/platform/public/admin && \
+    cp -r dist/* /app/platform/public/admin/
 
 # Устанавливаем serve для статических файлов админ-панели
 RUN npm install -g serve
@@ -90,16 +92,9 @@ echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
 echo 'stderr_logfile=/var/log/api.err.log' >> /etc/supervisor/conf.d/supervisord.conf && \
 echo 'stdout_logfile=/var/log/api.out.log' >> /etc/supervisor/conf.d/supervisord.conf && \
 echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
-echo '[program:admin]' >> /etc/supervisor/conf.d/supervisord.conf && \
-echo 'command=serve -s dist -l 3001' >> /etc/supervisor/conf.d/supervisord.conf && \
-echo 'directory=/app/admin/gills-moscow-front' >> /etc/supervisor/conf.d/supervisord.conf && \
-echo 'autostart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
-echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
-echo 'stderr_logfile=/var/log/admin.err.log' >> /etc/supervisor/conf.d/supervisord.conf && \
-echo 'stdout_logfile=/var/log/admin.out.log' >> /etc/supervisor/conf.d/supervisord.conf
 
 # Открываем порты
-EXPOSE 3000 8000 3001
+EXPOSE 3000 8000
 
 # Запускаем через supervisor
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

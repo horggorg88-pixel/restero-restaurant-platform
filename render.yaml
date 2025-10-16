@@ -16,9 +16,6 @@ services:
       - port: 8000 # Порт для Laravel API
         protocol: http
         pullRequestOptIn: true
-      - port: 3001 # Порт для React Admin
-        protocol: http
-        pullRequestOptIn: true
     envVars:
       - key: NODE_ENV
         value: production
