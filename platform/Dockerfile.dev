@@ -1,0 +1,15 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Установить зависимости сначала
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# Затем скопировать код
+COPY . .
+
+EXPOSE 3000
+
+# Использовать npx для запуска
+CMD ["npx", "next", "dev", "--hostname", "0.0.0.0"]

@@ -1,0 +1,19 @@
+# Простейший Dockerfile для Northflank (только Next.js)
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Копируем все файлы
+COPY . .
+
+# Устанавливаем зависимости
+RUN cd platform && npm ci --only=production
+
+# Собираем приложение
+RUN cd platform && npm run build
+
+# Запускаем только Next.js
+WORKDIR /app/platform
+EXPOSE 3000
+
+CMD ["npm", "start"]
