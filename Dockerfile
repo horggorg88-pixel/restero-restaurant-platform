@@ -40,6 +40,13 @@ COPY . .
 # Устанавливаем зависимости Node.js
 RUN cd platform && npm ci --only=production
 
+# Создаем необходимые директории для Laravel
+RUN mkdir -p /app/api/bootstrap/cache && \
+    mkdir -p /app/api/storage/logs && \
+    mkdir -p /app/api/storage/framework/cache && \
+    mkdir -p /app/api/storage/framework/sessions && \
+    mkdir -p /app/api/storage/framework/views
+
 # Устанавливаем зависимости PHP
 RUN cd api && COMPOSER_IGNORE_PLATFORM_REQS=1 composer install --no-dev --optimize-autoloader
 
