@@ -77,7 +77,7 @@ const BookingManagementPage = () => {
         return;
       }
 
-      const adminUrl = `${process.env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3001'}/?token=${encodeURIComponent(token)}`;
+      const adminUrl = `http://localhost:3001/?token=${encodeURIComponent(token)}`;
       window.open(adminUrl, '_blank', 'noopener,noreferrer');
       
     } catch (error) {
