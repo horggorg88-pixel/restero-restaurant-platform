@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, Calendar, Users, BarChart3 } from 'lucide-react';
+import { ExternalLink, Calendar, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface BookingManagementLinkProps {
@@ -15,10 +15,42 @@ interface BookingManagementLinkProps {
 const BookingManagementLink: React.FC<BookingManagementLinkProps> = ({
   restaurantId,
   restaurantName,
-  bookingCount = 0,
+  bookingCount: propBookingCount,
   className = ''
 }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [bookingCount, setBookingCount] = useState(propBookingCount || 0);
+
+  useEffect(() => {
+    // Загружаем реальное количество активных броней
+    fetchActiveBookings();
+  }, []);
+
+  const fetchActiveBookings = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch('/api/bookings/active', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setBookingCount(data.count || 0);
+      } else {
+        // Если API недоступен, используем переданное значение или 0
+        setBookingCount(propBookingCount || 0);
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки активных бронирований:', error);
+      // При ошибке используем переданное значение или 0
+      setBookingCount(propBookingCount || 0);
+    }
+  };
 
   const handleOpenBookingManagement = async () => {
     setIsLoading(true);
@@ -51,20 +83,12 @@ const BookingManagementLink: React.FC<BookingManagementLinkProps> = ({
           </p>
           
           {/* Статистика */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="flex justify-center">
             <div className="flex items-center space-x-2">
               <Users className="h-4 w-4 text-blue-500" />
               <div>
                 <div className="text-lg font-semibold text-gray-900">{bookingCount}</div>
                 <div className="text-xs text-gray-600">Активных броней</div>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <BarChart3 className="h-4 w-4 text-green-500" />
-              <div>
-                <div className="text-lg font-semibold text-gray-900">98%</div>
-                <div className="text-xs text-gray-600">Точность</div>
               </div>
             </div>
           </div>
