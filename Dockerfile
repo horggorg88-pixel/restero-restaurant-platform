@@ -40,6 +40,9 @@ COPY . .
 # Устанавливаем зависимости Node.js
 RUN cd platform && npm ci
 
+# Устанавливаем зависимости админ-панели
+RUN cd admin/gills-moscow-front && npm ci
+
 # Создаем необходимые директории для Laravel
 RUN mkdir -p /app/api/bootstrap/cache && \
     mkdir -p /app/api/storage/logs && \
@@ -67,6 +70,9 @@ RUN cd api && \
 # Собираем Next.js приложение
 RUN cd platform && npm run build
 
+# Собираем админ-панель
+RUN cd admin/gills-moscow-front && npm run build
+
 # Создаем конфигурацию для supervisor
 RUN mkdir -p /etc/supervisor/conf.d && \
     echo '[supervisord]' > /etc/supervisor/conf.d/supervisord.conf && \
@@ -86,10 +92,18 @@ echo 'directory=/app/api' >> /etc/supervisor/conf.d/supervisord.conf && \
 echo 'autostart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
 echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
 echo 'stderr_logfile=/var/log/api.err.log' >> /etc/supervisor/conf.d/supervisord.conf && \
-echo 'stdout_logfile=/var/log/api.out.log' >> /etc/supervisor/conf.d/supervisord.conf
+echo 'stdout_logfile=/var/log/api.out.log' >> /etc/supervisor/conf.d/supervisord.conf && \
+echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
+echo '[program:admin]' >> /etc/supervisor/conf.d/supervisord.conf && \
+echo 'command=npm run preview -- --port 3001 --host 0.0.0.0' >> /etc/supervisor/conf.d/supervisord.conf && \
+echo 'directory=/app/admin/gills-moscow-front' >> /etc/supervisor/conf.d/supervisord.conf && \
+echo 'autostart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
+echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
+echo 'stderr_logfile=/var/log/admin.err.log' >> /etc/supervisor/conf.d/supervisord.conf && \
+echo 'stdout_logfile=/var/log/admin.out.log' >> /etc/supervisor/conf.d/supervisord.conf
 
 # Открываем порты
-EXPOSE 3000 8000
+EXPOSE 3000 8000 3001
 
 # Запускаем через supervisor
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
