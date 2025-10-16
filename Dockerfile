@@ -57,15 +57,8 @@ RUN cd api && COMPOSER_IGNORE_PLATFORM_REQS=1 COMPOSER_DISABLE_XDEBUG_WARN=1 com
 
 # Настраиваем Laravel (без Apiato команд)
 RUN cd api && \
-    touch database/database.sqlite && \
     echo "APP_KEY=" > .env && \
-    php -r "echo 'APP_KEY=base64:' . base64_encode(random_bytes(32)) . PHP_EOL;" >> .env && \
-    echo "APP_ENV=production" >> .env && \
-    echo "APP_DEBUG=false" >> .env && \
-    echo "DB_CONNECTION=sqlite" >> .env && \
-    echo "DB_DATABASE=/app/api/database/database.sqlite" >> .env && \
-    echo "CACHE_DRIVER=file" >> .env && \
-    echo "SESSION_DRIVER=file" >> .env
+    php -r "echo 'APP_KEY=base64:' . base64_encode(random_bytes(32)) . PHP_EOL;" >> .env
 
 # Собираем Next.js приложение
 RUN cd platform && npm run build

@@ -27,13 +27,36 @@ services:
       - key: APP_KEY
         generateValue: true
       - key: DB_CONNECTION
-        value: sqlite
+        value: mysql
+      - key: DB_HOST
+        fromDatabase:
+          name: restero-db
+          property: host
+      - key: DB_PORT
+        value: 3306
       - key: DB_DATABASE
-        value: /app/api/database/database.sqlite
+        fromDatabase:
+          name: restero-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: restero-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: restero-db
+          property: password
+      - key: REDIS_HOST
+        fromService:
+          type: redis
+          name: restero-redis
+          property: host
+      - key: REDIS_PORT
+        value: 6379
       - key: CACHE_DRIVER
-        value: file
+        value: redis
       - key: SESSION_DRIVER
-        value: file
+        value: redis
       - key: NEXT_PUBLIC_API_URL
         value: https://restero-restaurant-platform.onrender.com
       - key: NEXTAUTH_URL
@@ -50,3 +73,14 @@ services:
         value: https://restero-restaurant-platform.onrender.com:8000
       - key: VITE_PLATFORM_URL
         value: https://restero-restaurant-platform.onrender.com
+
+databases:
+  # MySQL база данных
+  - name: restero-db
+    databaseName: restero
+    user: restero
+    plan: starter
+
+  # Redis для кеширования
+  - name: restero-redis
+    plan: starter
