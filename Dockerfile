@@ -38,7 +38,7 @@ WORKDIR /app
 COPY . .
 
 # Устанавливаем зависимости Node.js
-RUN cd platform && npm ci --only=production
+RUN cd platform && npm ci
 
 # Создаем необходимые директории для Laravel
 RUN mkdir -p /app/api/bootstrap/cache && \
