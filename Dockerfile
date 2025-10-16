@@ -80,13 +80,13 @@ RUN mkdir -p /etc/supervisor/conf.d && \
     echo 'stderr_logfile=/var/log/platform.err.log' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'stdout_logfile=/var/log/platform.out.log' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo '[program:api]' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'command=php artisan serve --host=0.0.0.0 --port=8000' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'directory=/app/api' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'autostart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'stderr_logfile=/var/log/api.err.log' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'stdout_logfile=/var/log/api.out.log' >> /etc/supervisor/conf.d/supervisord.conf
+echo '[program:api]' >> /etc/supervisor/conf.d/supervisord.conf && \
+echo 'command=php -S 0.0.0.0:8000 -t public' >> /etc/supervisor/conf.d/supervisord.conf && \
+echo 'directory=/app/api' >> /etc/supervisor/conf.d/supervisord.conf && \
+echo 'autostart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
+echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
+echo 'stderr_logfile=/var/log/api.err.log' >> /etc/supervisor/conf.d/supervisord.conf && \
+echo 'stdout_logfile=/var/log/api.out.log' >> /etc/supervisor/conf.d/supervisord.conf
 
 # Открываем порты
 EXPOSE 3000 8000
