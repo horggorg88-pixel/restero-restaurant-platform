@@ -77,7 +77,7 @@ const BookingManagementPage = () => {
         return;
       }
 
-      const adminUrl = `https://restero-restaurant-platform.onrender.com/admin/?token=${encodeURIComponent(token)}`;
+      const adminUrl = `https://restero-restaurant-platform.onrender.com/admin/`;
       window.open(adminUrl, '_blank', 'noopener,noreferrer');
       
     } catch (error) {

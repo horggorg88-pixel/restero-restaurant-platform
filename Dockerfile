@@ -66,7 +66,8 @@ RUN cd platform && npm run build
 # Собираем админ-панель и копируем в Next.js public
 RUN cd admin/gills-moscow-front && npm run build && \
     mkdir -p /app/platform/public/admin && \
-    cp -r dist/* /app/platform/public/admin/
+    cp -r dist/* /app/platform/public/admin/ && \
+    chmod -R 755 /app/platform/public/admin
 
 # Устанавливаем serve для статических файлов админ-панели
 RUN npm install -g serve
