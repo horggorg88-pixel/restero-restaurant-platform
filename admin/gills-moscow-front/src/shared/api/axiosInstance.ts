@@ -61,7 +61,7 @@ axiosInstance.interceptors.response.use(
         try {
           const refreshToken = localStorage.getItem("refreshToken");
           const response = await axios.post(
-            "https://rest64.azatdev.ru/api/v1/clients/web/refresh",
+            `${import.meta.env.VITE_BACKEND_API_URL}/v1/clients/web/refresh`,
             {
               refresh_token: refreshToken,
             }

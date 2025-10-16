@@ -73,6 +73,9 @@ RUN cd platform && npm run build
 # Собираем админ-панель
 RUN cd admin/gills-moscow-front && npm run build
 
+# Устанавливаем serve для статических файлов админ-панели
+RUN npm install -g serve
+
 # Создаем конфигурацию для supervisor
 RUN mkdir -p /etc/supervisor/conf.d && \
     echo '[supervisord]' > /etc/supervisor/conf.d/supervisord.conf && \
@@ -95,7 +98,7 @@ echo 'stderr_logfile=/var/log/api.err.log' >> /etc/supervisor/conf.d/supervisord
 echo 'stdout_logfile=/var/log/api.out.log' >> /etc/supervisor/conf.d/supervisord.conf && \
 echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
 echo '[program:admin]' >> /etc/supervisor/conf.d/supervisord.conf && \
-echo 'command=npm run preview -- --port 3001 --host 0.0.0.0' >> /etc/supervisor/conf.d/supervisord.conf && \
+echo 'command=serve -s dist -l 3001' >> /etc/supervisor/conf.d/supervisord.conf && \
 echo 'directory=/app/admin/gills-moscow-front' >> /etc/supervisor/conf.d/supervisord.conf && \
 echo 'autostart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
 echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf && \

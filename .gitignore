@@ -82,9 +82,6 @@ railway.json
 nixpacks.toml
 railway.env.example
 
-# Render files
-render.yaml
-
 # API specific
 api/vendor/
 api/storage/logs/

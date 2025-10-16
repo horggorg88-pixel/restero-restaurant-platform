@@ -1,0 +1,52 @@
+services:
+  # Основное приложение (Next.js + Laravel API)
+  - type: web
+    name: restero-restaurant-platform
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    region: oregon
+    branch: main
+    buildCommand: ""
+    startCommand: ""
+    ports:
+      - port: 3000
+        protocol: http
+        pullRequestOptIn: true
+      - port: 8000 # Порт для Laravel API
+        protocol: http
+        pullRequestOptIn: true
+      - port: 3001 # Порт для React Admin
+        protocol: http
+        pullRequestOptIn: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APP_ENV
+        value: production
+      - key: APP_KEY
+        generateValue: true
+      - key: DB_CONNECTION
+        value: sqlite
+      - key: DB_DATABASE
+        value: /app/api/database/database.sqlite
+      - key: CACHE_DRIVER
+        value: file
+      - key: SESSION_DRIVER
+        value: file
+      - key: NEXT_PUBLIC_API_URL
+        value: https://restero-restaurant-platform.onrender.com
+      - key: NEXTAUTH_URL
+        value: https://restero-restaurant-platform.onrender.com
+      - key: NEXTAUTH_SECRET
+        generateValue: true
+      - key: COMPOSER_IGNORE_PLATFORM_REQS
+        value: 1
+      - key: COMPOSER_ALLOW_SUPERUSER
+        value: 1
+      - key: COMPOSER_DISABLE_XDEBUG_WARN
+        value: 1
+      - key: VITE_BACKEND_API_URL
+        value: https://restero-restaurant-platform.onrender.com:8000
+      - key: VITE_PLATFORM_URL
+        value: https://restero-restaurant-platform.onrender.com
