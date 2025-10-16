@@ -54,7 +54,8 @@ RUN cd api && COMPOSER_IGNORE_PLATFORM_REQS=1 COMPOSER_DISABLE_XDEBUG_WARN=1 com
 RUN cd platform && npm run build
 
 # Создаем конфигурацию для supervisor
-RUN echo '[supervisord]' > /etc/supervisor/conf.d/supervisord.conf && \
+RUN mkdir -p /etc/supervisor/conf.d && \
+    echo '[supervisord]' > /etc/supervisor/conf.d/supervisord.conf && \
     echo 'nodaemon=true' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo '[program:platform]' >> /etc/supervisor/conf.d/supervisord.conf && \
