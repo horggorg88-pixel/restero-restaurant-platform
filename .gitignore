@@ -67,9 +67,9 @@ ehthumbs.db
 Thumbs.db
 
 # Docker files
+Dockerfile*
 docker-compose*
 .dockerignore
-# Dockerfile* - закомментировано для Northflank
 
 # Scripts
 start.ps1

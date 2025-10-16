@@ -1,4 +1,4 @@
-# Упрощенный Dockerfile для Northflank
+# Используем официальный Node.js образ с PHP
 FROM node:18-alpine
 
 # Устанавливаем PHP и необходимые расширения
@@ -23,76 +23,61 @@ RUN apk add --no-cache \
     php82-simplexml \
     php82-xmlreader \
     php82-ctype \
+    php82-filter \
+    php82-hash \
     php82-iconv \
     php82-intl \
     php82-session \
     php82-sodium \
-    php82-gettext \
     composer \
     supervisor
 
 # Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Копируем все файлы проекта
-COPY . .
+# Копируем package.json платформы
+COPY platform/package*.json ./
 
 # Устанавливаем зависимости Node.js
-RUN cd platform && npm ci
+RUN npm ci --only=production
 
-# Устанавливаем зависимости админ-панели
-RUN cd admin/gills-moscow-front && npm ci
+# Копируем исходный код платформы
+COPY platform/ ./
 
-# Создаем необходимые директории для Laravel
-RUN mkdir -p /app/api/bootstrap/cache && \
-    mkdir -p /app/api/storage/logs && \
-    mkdir -p /app/api/storage/framework/cache && \
-    mkdir -p /app/api/storage/framework/sessions && \
-    mkdir -p /app/api/storage/framework/views && \
-    chmod -R 777 /app/api/storage && \
-    chmod -R 777 /app/api/bootstrap/cache
+# Собираем приложение
+RUN npm run build
+
+# Переходим в директорию API
+WORKDIR /app/api
+
+# Копируем composer файлы API
+COPY api/composer.json api/composer.lock ./
 
 # Устанавливаем зависимости PHP
-RUN cd api && COMPOSER_IGNORE_PLATFORM_REQS=1 COMPOSER_DISABLE_XDEBUG_WARN=1 composer install --no-dev --optimize-autoloader --no-scripts
+RUN composer install --no-dev --optimize-autoloader
 
-# Настраиваем Laravel (без Apiato команд)
-RUN cd api && \
-    echo "APP_KEY=" > .env && \
-    php -r "echo 'APP_KEY=base64:' . base64_encode(random_bytes(32)) . PHP_EOL;" >> .env
-
-# Собираем Next.js приложение
-RUN cd platform && npm run build
-
-# Собираем админ-панель и копируем в Next.js public
-RUN cd admin/gills-moscow-front && npm run build && \
-    mkdir -p /app/platform/public/admin && \
-    cp -r dist/* /app/platform/public/admin/ && \
-    chmod -R 755 /app/platform/public/admin
-
-# Устанавливаем serve для статических файлов админ-панели
-RUN npm install -g serve
+# Копируем исходный код API
+COPY api/ ./
 
 # Создаем конфигурацию для supervisor
-RUN mkdir -p /etc/supervisor/conf.d && \
-    echo '[supervisord]' > /etc/supervisor/conf.d/supervisord.conf && \
+RUN echo '[supervisord]' > /etc/supervisor/conf.d/supervisord.conf && \
     echo 'nodaemon=true' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo '[program:platform]' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'command=npm start' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'directory=/app/platform' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'directory=/app' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'autostart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'stderr_logfile=/var/log/platform.err.log' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'stdout_logfile=/var/log/platform.out.log' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo '[program:api]' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'command=php -S 0.0.0.0:8000 -t public' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'command=php artisan serve --host=0.0.0.0 --port=8000' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'directory=/app/api' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'autostart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'stderr_logfile=/var/log/api.err.log' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'stdout_logfile=/var/log/api.out.log' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo '' >> /etc/supervisor/conf.d/supervisord.conf
+    echo 'stdout_logfile=/var/log/api.out.log' >> /etc/supervisor/conf.d/supervisord.conf
 
 # Открываем порты
 EXPOSE 3000 8000
