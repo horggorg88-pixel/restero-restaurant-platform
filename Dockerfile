@@ -48,7 +48,7 @@ RUN mkdir -p /app/api/bootstrap/cache && \
     mkdir -p /app/api/storage/framework/views
 
 # Устанавливаем зависимости PHP
-RUN cd api && COMPOSER_IGNORE_PLATFORM_REQS=1 composer install --no-dev --optimize-autoloader
+RUN cd api && COMPOSER_IGNORE_PLATFORM_REQS=1 COMPOSER_DISABLE_XDEBUG_WARN=1 composer install --no-dev --optimize-autoloader
 
 # Собираем Next.js приложение
 RUN cd platform && npm run build
