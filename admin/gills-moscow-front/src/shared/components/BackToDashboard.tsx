@@ -17,7 +17,7 @@ const BackToDashboard: React.FC<BackToDashboardProps> = ({ className = '' }) => 
     }
 
     // Формируем URL для основной платформы с токеном
-    const platformUrl = `${import.meta.env.VITE_PLATFORM_URL || 'http://localhost:3000'}/dashboard?token=${encodeURIComponent(token)}`;
+    const platformUrl = `${import.meta.env.VITE_PLATFORM_URL || 'https://restero-restaurant-platform.onrender.com'}/dashboard?token=${encodeURIComponent(token)}`;
     
     // Переходим на основную платформу
     window.location.href = platformUrl;
