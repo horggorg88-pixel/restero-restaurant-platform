@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // App Router включен по умолчанию в Next.js 14
-  output: 'standalone',
+  // output: 'standalone', // Временно отключаем для Railway
 }
 
 module.exports = nextConfig

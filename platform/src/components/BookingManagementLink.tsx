@@ -24,22 +24,11 @@ const BookingManagementLink: React.FC<BookingManagementLinkProps> = ({
     setIsLoading(true);
     
     try {
-      // Получаем токен из localStorage
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        alert('Необходимо войти в систему');
-        return;
-      }
-
-      // Формируем URL для админ-панели с токеном
-      const adminUrl = `${process.env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3001'}/?token=${encodeURIComponent(token)}`;
-      
-      // Открываем админ-панель в новой вкладке
-      window.open(adminUrl, '_blank', 'noopener,noreferrer');
+      // Переходим на страницу управления бронированиями в платформе
+      window.location.href = '/dashboard/booking-management';
       
     } catch (error) {
-      console.error('Ошибка при переходе в админ-панель:', error);
+      console.error('Ошибка при переходе в панель управления бронированиями:', error);
       alert('Ошибка при переходе в панель управления бронированиями');
     } finally {
       setIsLoading(false);
@@ -95,14 +84,14 @@ const BookingManagementLink: React.FC<BookingManagementLinkProps> = ({
             ) : (
               <>
                 <ExternalLink className="h-4 w-4 mr-2" />
-                Открыть панель управления
+                Управление бронированиями
               </>
             )}
           </Button>
           
           {/* Дополнительная информация */}
           <div className="text-xs text-gray-500 text-center">
-            Панель откроется в новой вкладке
+            Переход к управлению бронированиями
           </div>
         </div>
       </CardContent>
