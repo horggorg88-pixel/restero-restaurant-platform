@@ -45,10 +45,21 @@ RUN mkdir -p /app/api/bootstrap/cache && \
     mkdir -p /app/api/storage/logs && \
     mkdir -p /app/api/storage/framework/cache && \
     mkdir -p /app/api/storage/framework/sessions && \
-    mkdir -p /app/api/storage/framework/views
+    mkdir -p /app/api/storage/framework/views && \
+    chmod -R 777 /app/api/storage && \
+    chmod -R 777 /app/api/bootstrap/cache
 
 # Устанавливаем зависимости PHP
 RUN cd api && COMPOSER_IGNORE_PLATFORM_REQS=1 COMPOSER_DISABLE_XDEBUG_WARN=1 composer install --no-dev --optimize-autoloader --no-scripts
+
+# Настраиваем Laravel
+RUN cd api && \
+    php artisan key:generate --force && \
+    php artisan config:cache && \
+    php artisan route:cache && \
+    php artisan view:cache && \
+    touch database/database.sqlite && \
+    php artisan migrate --force
 
 # Собираем Next.js приложение
 RUN cd platform && npm run build
