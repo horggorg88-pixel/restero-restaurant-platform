@@ -23,8 +23,6 @@ RUN apk add --no-cache \
     php82-simplexml \
     php82-xmlreader \
     php82-ctype \
-    php82-filter \
-    php82-hash \
     php82-iconv \
     php82-intl \
     php82-session \
