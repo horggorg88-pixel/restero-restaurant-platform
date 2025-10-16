@@ -27,6 +27,7 @@ RUN apk add --no-cache \
     php82-intl \
     php82-session \
     php82-sodium \
+    php82-gettext \
     composer \
     supervisor
 
@@ -40,7 +41,7 @@ COPY . .
 RUN cd platform && npm ci --only=production
 
 # Устанавливаем зависимости PHP
-RUN cd api && composer install --no-dev --optimize-autoloader
+RUN cd api && COMPOSER_IGNORE_PLATFORM_REQS=1 composer install --no-dev --optimize-autoloader
 
 # Собираем Next.js приложение
 RUN cd platform && npm run build
