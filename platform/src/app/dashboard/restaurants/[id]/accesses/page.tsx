@@ -11,25 +11,27 @@ import {
   Plus, 
   Mail, 
   Shield, 
+  Phone,
   UserCheck, 
-  UserX,
   ArrowLeft,
-  Copy,
   Trash2
 } from 'lucide-react';
+import { ROLES, ROLE_DESCRIPTIONS } from '@/lib/types/roles';
 
 interface Access {
-  id: number;
+  id: string;
+  userId: string;
+  restaurantId: string;
   email: string;
-  role: 'ADMIN' | 'HOSTESS';
-  status: 'PENDING' | 'ACTIVE' | 'REVOKED';
-  accessToken?: string;
-  expiresAt?: string;
+  role: 'admin' | 'manager';
+  isActive: boolean;
   createdAt: string;
+  updatedAt: string;
+  activatedAt?: string;
 }
 
 interface Restaurant {
-  id: number;
+  id: string;
   name: string;
   address: string;
 }
@@ -43,9 +45,13 @@ const RestaurantAccessesPage = () => {
   const [accesses, setAccesses] = useState<Access[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
   const [newAccess, setNewAccess] = useState({
     email: '',
-    role: 'HOSTESS' as 'ADMIN' | 'HOSTESS'
+    password: '',
+    phone: '',
+    role: 'manager' as 'admin' | 'manager'
   });
 
   useEffect(() => {
@@ -87,9 +93,13 @@ const RestaurantAccessesPage = () => {
       if (response.ok) {
         const data = await response.json();
         setAccesses(data);
+      } else {
+        const error = await response.json();
+        setError(error.message || 'Ошибка загрузки доступов');
       }
     } catch (error) {
       console.error('Ошибка получения доступов:', error);
+      setError('Ошибка соединения с сервером');
     } finally {
       setIsLoading(false);
     }
@@ -97,14 +107,32 @@ const RestaurantAccessesPage = () => {
 
   const handleAddAccess = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setError('');
     
     if (!newAccess.email.trim()) {
-      alert('Введите email');
+      setError('Введите email');
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!newAccess.password.trim()) {
+      setError('Введите пароль');
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!newAccess.phone.trim()) {
+      setError('Введите телефон');
+      setIsSubmitting(false);
       return;
     }
 
     const token = localStorage.getItem('token');
-    if (!token) return;
+    if (!token) {
+      router.push('/auth/login');
+      return;
+    }
 
     try {
       const response = await fetch(`/api/restaurants/${restaurantId}/accesses`, {
@@ -116,24 +144,26 @@ const RestaurantAccessesPage = () => {
         body: JSON.stringify(newAccess)
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        const data = await response.json();
         setAccesses(prev => [...prev, data.access]);
-        setNewAccess({ email: '', role: 'HOSTESS' });
+        setNewAccess({ email: '', password: '', phone: '', role: 'manager' });
         setShowAddForm(false);
-        alert('Доступ успешно создан! Ссылка отправлена на email.');
+        setError('');
       } else {
-        const error = await response.json();
-        alert(error.message || 'Ошибка создания доступа');
+        setError(data.message || 'Ошибка создания доступа');
       }
     } catch (error) {
       console.error('Ошибка создания доступа:', error);
-      alert('Ошибка создания доступа');
+      setError('Ошибка соединения с сервером');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleRevokeAccess = async (accessId: number) => {
-    if (!confirm('Вы уверены, что хотите отозвать доступ?')) {
+  const handleDeleteAccess = async (accessId: string) => {
+    if (!confirm('Вы уверены, что хотите удалить доступ?')) {
       return;
     }
 
@@ -141,7 +171,7 @@ const RestaurantAccessesPage = () => {
     if (!token) return;
 
     try {
-      const response = await fetch(`/api/restaurants/${restaurantId}/accesses/${accessId}`, {
+      const response = await fetch(`/api/restaurants/${restaurantId}/accesses/delete?accessId=${accessId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -151,43 +181,36 @@ const RestaurantAccessesPage = () => {
       if (response.ok) {
         setAccesses(prev => prev.filter(access => access.id !== accessId));
       } else {
-        alert('Ошибка отзыва доступа');
+        const error = await response.json();
+        setError(error.message || 'Ошибка удаления доступа');
       }
     } catch (error) {
-      console.error('Ошибка отзыва доступа:', error);
-      alert('Ошибка отзыва доступа');
-    }
-  };
-
-  const copyAccessLink = (accessToken: string) => {
-    const link = `${window.location.origin}/access/${accessToken}`;
-    navigator.clipboard.writeText(link);
-    alert('Ссылка скопирована в буфер обмена');
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'ACTIVE': return 'bg-green-100 text-green-800';
-      case 'PENDING': return 'bg-yellow-100 text-yellow-800';
-      case 'REVOKED': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'ACTIVE': return 'Активен';
-      case 'PENDING': return 'Ожидает';
-      case 'REVOKED': return 'Отозван';
-      default: return status;
+      console.error('Ошибка удаления доступа:', error);
+      setError('Ошибка соединения с сервером');
     }
   };
 
   const getRoleText = (role: string) => {
     switch (role) {
-      case 'ADMIN': return 'Администратор';
-      case 'HOSTESS': return 'Хостес';
+      case 'admin': return 'Администратор';
+      case 'manager': return 'Менеджер';
       default: return role;
+    }
+  };
+
+  const getRoleDescription = (role: string) => {
+    switch (role) {
+      case 'admin': return 'Полный доступ ко всем функциям';
+      case 'manager': return 'Ограниченный доступ к функциям';
+      default: return '';
+    }
+  };
+
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'admin': return <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />;
+      case 'manager': return <UserCheck className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />;
+      default: return <UserCheck className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />;
     }
   };
 
@@ -240,6 +263,13 @@ const RestaurantAccessesPage = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-4 sm:py-8">
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            {error}
+          </div>
+        )}
+
         {/* Add Access Form */}
         {showAddForm && (
           <Card className="mb-6 sm:mb-8">
@@ -269,27 +299,68 @@ const RestaurantAccessesPage = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="role" className="text-sm sm:text-base">Роль</Label>
-                    <select
-                      id="role"
-                      value={newAccess.role}
-                      onChange={(e) => setNewAccess(prev => ({ ...prev, role: e.target.value as 'ADMIN' | 'HOSTESS' }))}
-                      className="flex h-10 sm:h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    >
-                      <option value="HOSTESS">Хостес</option>
-                      <option value="ADMIN">Администратор</option>
-                    </select>
+                    <Label htmlFor="password" className="text-sm sm:text-base">Пароль</Label>
+                    <div className="relative">
+                      <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="Введите пароль"
+                        value={newAccess.password}
+                        onChange={(e) => setNewAccess(prev => ({ ...prev, password: e.target.value }))}
+                        className="pl-10 h-10 sm:h-11 text-sm sm:text-base"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="text-sm sm:text-base">Телефон</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="phone"
+                        type="tel"
+                        placeholder="+79994033950"
+                        value={newAccess.phone}
+                        onChange={(e) => setNewAccess(prev => ({ ...prev, phone: e.target.value }))}
+                        className="pl-10 h-10 sm:h-11 text-sm sm:text-base"
+                        required
+                      />
+                    </div>
                   </div>
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="role" className="text-sm sm:text-base">Роль</Label>
+                  <select
+                    id="role"
+                    value={newAccess.role}
+                    onChange={(e) => setNewAccess(prev => ({ ...prev, role: e.target.value as 'admin' | 'manager' }))}
+                    className="flex h-10 sm:h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    <option value="manager">Менеджер - ограниченный доступ</option>
+                    <option value="admin">Администратор - полный доступ</option>
+                  </select>
+                </div>
+
                 <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
-                  <Button type="submit" variant="restero" className="w-full sm:w-auto h-10 sm:h-11">
-                    Создать доступ
+                  <Button 
+                    type="submit" 
+                    variant="restero" 
+                    className="w-full sm:w-auto h-10 sm:h-11"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Создание...' : 'Создать доступ'}
                   </Button>
                   <Button 
                     type="button" 
                     variant="outline"
-                    onClick={() => setShowAddForm(false)}
+                    onClick={() => {
+                      setShowAddForm(false);
+                      setError('');
+                      setNewAccess({ email: '', password: '', phone: '', role: 'manager' });
+                    }}
                     className="w-full sm:w-auto h-10 sm:h-11"
                   >
                     Отмена
@@ -330,47 +401,38 @@ const RestaurantAccessesPage = () => {
             ) : (
               <div className="space-y-3 sm:space-y-4">
                 {accesses.map((access) => (
-                  <div key={access.id} className="border rounded-lg p-3 sm:p-4 hover-lift">
+                  <div key={access.id} className="border rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
                       <div className="flex items-center space-x-3 sm:space-x-4">
                         <div className="p-2 bg-gray-100 rounded-lg flex-shrink-0">
-                          {access.role === 'ADMIN' ? (
-                            <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
-                          ) : (
-                            <UserCheck className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
-                          )}
+                          {getRoleIcon(access.role)}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium text-gray-900 text-sm sm:text-base truncate">{access.email}</p>
-                          <p className="text-xs sm:text-sm text-gray-600">{getRoleText(access.role)}</p>
+                          <p className="font-medium text-gray-900 text-sm sm:text-base truncate">
+                            {access.email}
+                          </p>
+                          <p className="text-xs sm:text-sm text-gray-600">Сотрудник</p>
+                          <p className="text-xs text-gray-500">{getRoleDescription(access.role)}</p>
                         </div>
                       </div>
                       
                       <div className="flex items-center justify-between sm:justify-end space-x-2 sm:space-x-4">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(access.status)}`}>
-                          {getStatusText(access.status)}
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          access.isActive 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {access.isActive ? 'Активен' : 'Неактивен'}
                         </span>
                         
                         <div className="flex items-center space-x-2">
-                          {access.accessToken && access.status === 'ACTIVE' && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => copyAccessLink(access.accessToken!)}
-                              className="h-8 sm:h-9 px-2 sm:px-3"
-                            >
-                              <Copy className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
-                              <span className="hidden sm:inline">Ссылка</span>
-                            </Button>
-                          )}
-                          
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleRevokeAccess(access.id)}
+                            onClick={() => handleDeleteAccess(access.id)}
                             className="text-red-600 hover:text-red-700 h-8 sm:h-9 px-2 sm:px-3"
                           >
-                            <UserX className="h-3 w-3 sm:h-4 sm:w-4" />
+                            <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                           </Button>
                         </div>
                       </div>
@@ -378,8 +440,8 @@ const RestaurantAccessesPage = () => {
                     
                     <div className="mt-2 text-xs text-gray-500 flex flex-col sm:flex-row sm:space-x-4">
                       <span>Создан: {new Date(access.createdAt).toLocaleDateString('ru-RU')}</span>
-                      {access.expiresAt && (
-                        <span>Истекает: {new Date(access.expiresAt).toLocaleDateString('ru-RU')}</span>
+                      {access.activatedAt && (
+                        <span>Активирован: {new Date(access.activatedAt).toLocaleDateString('ru-RU')}</span>
                       )}
                     </div>
                   </div>

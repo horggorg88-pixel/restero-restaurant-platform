@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { handleCorsPreflight, createCorsResponse, createCorsErrorResponse, getOriginFromHeaders } from '@/lib/cors';
 import bcrypt from 'bcryptjs';
 import { RedisDataManager, connectRedis } from '@/lib/redis';
 import { generateJWTToken } from '@/lib/auth';
+
+
+// Явно указываем что это динамический route
+export const dynamic = 'force-dynamic';
+
+// Handle preflight requests
+export async function OPTIONS(request: NextRequest) {
+  const origin = getOriginFromHeaders(request.headers);
+  return handleCorsPreflight(origin);
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,10 +20,8 @@ export async function POST(request: NextRequest) {
 
     // Валидация
     if (!email || !password) {
-      return NextResponse.json(
-        { message: 'Email и пароль обязательны' },
-        { status: 400 }
-      );
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Email и пароль обязательны', 400, origin);
     }
 
     // Подключение к Redis
@@ -22,37 +31,37 @@ export async function POST(request: NextRequest) {
     const user = await RedisDataManager.getUserByEmail(email);
 
     if (!user) {
-      return NextResponse.json(
-        { message: 'Неверный email или пароль' },
-        { status: 401 }
-      );
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Неверный email или пароль', 401, origin);
     }
 
     // Проверяем пароль
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      return NextResponse.json(
-        { message: 'Неверный email или пароль' },
-        { status: 401 }
-      );
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Неверный email или пароль', 401, origin);
     }
 
     // Проверяем, подтвержден ли email
     if (!user.isEmailVerified) {
-      return NextResponse.json(
-        { message: 'Подтвердите email перед входом в систему' },
-        { status: 401 }
-      );
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Подтвердите email перед входом в систему', 401, origin);
     }
 
     // Обновляем время последнего входа
     user.lastLoginAt = new Date().toISOString();
     await RedisDataManager.saveUser(user);
 
-          // Генерируем JWT токен
+          // Генерируем JWT токен (извлекаем числовую часть из id вида "user:11")
+          const numericUserId = (() => {
+            const parts = String(user.id).split(':');
+            const n = parseInt(parts[parts.length - 1] || '', 10);
+            return Number.isFinite(n) ? n : 0;
+          })();
+
           const token = generateJWTToken({
-            userId: user.id, 
+            userId: numericUserId,
             email: user.email,
             firstName: user.firstName,
             lastName: user.lastName
@@ -71,9 +80,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Ошибка входа:', error);
-    return NextResponse.json(
-      { message: 'Внутренняя ошибка сервера' },
-      { status: 500 }
-    );
+    const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Внутренняя ошибка сервера', 500, origin);
   }
 }

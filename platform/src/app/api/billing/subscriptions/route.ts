@@ -1,16 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { handleCorsPreflight, createCorsResponse, createCorsErrorResponse, getOriginFromHeaders } from '@/lib/cors';
 import { verifyToken } from '@/lib/auth';
 
+// Явно указываем что это динамический route
+export const dynamic = 'force-dynamic';
+
 // Получение подписок пользователя
+
+// Handle preflight requests
+export async function OPTIONS(request: NextRequest) {
+  const origin = getOriginFromHeaders(request.headers);
+  return handleCorsPreflight(origin);
+}
+
 export async function GET(request: NextRequest) {
   try {
     // Получаем токен из заголовка Authorization
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { message: 'Токен авторизации не предоставлен' },
-        { status: 401 }
-      );
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Токен авторизации не предоставлен', 401, origin);
     }
 
     const token = authHeader.substring(7);
@@ -18,10 +27,8 @@ export async function GET(request: NextRequest) {
     try {
       decoded = verifyToken(token);
     } catch (error) {
-      return NextResponse.json(
-        { message: error instanceof Error ? error.message : 'Недействительный токен' },
-        { status: 401 }
-      );
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse(error instanceof Error ? error.message : 'Недействительный токен', 401, origin);
     }
 
     const { userId } = decoded;
@@ -29,13 +36,12 @@ export async function GET(request: NextRequest) {
     // Возвращаем пустые подписки
     const subscriptions: any[] = [];
 
-    return NextResponse.json(subscriptions);
+    const origin = getOriginFromHeaders(request.headers);
+    return createCorsResponse(subscriptions, 200, origin);
 
   } catch (error) {
     console.error('Ошибка получения подписок:', error);
-    return NextResponse.json(
-      { message: 'Внутренняя ошибка сервера' },
-      { status: 500 }
-    );
+    const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Внутренняя ошибка сервера', 500, origin);
   }
 }

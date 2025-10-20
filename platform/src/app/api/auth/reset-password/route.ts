@@ -1,5 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { handleCorsPreflight, createCorsResponse, createCorsErrorResponse, getOriginFromHeaders } from '@/lib/cors';
 import { verifyToken } from '@/lib/auth';
+
+
+// Явно указываем что это динамический route
+export const dynamic = 'force-dynamic';
+
+// Handle preflight requests
+export async function OPTIONS(request: NextRequest) {
+  const origin = getOriginFromHeaders(request.headers);
+  return handleCorsPreflight(origin);
+}
 
 export async function POST(request: NextRequest) {
   try {

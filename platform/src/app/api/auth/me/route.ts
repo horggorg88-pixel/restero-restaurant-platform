@@ -1,16 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { handleCorsPreflight, createCorsResponse, createCorsErrorResponse, getOriginFromHeaders } from '@/lib/cors';
 import { RedisDataManager, connectRedis } from '@/lib/redis';
 import { verifyToken } from '@/lib/auth';
+
+// Явно указываем что это динамический route
+export const dynamic = 'force-dynamic';
+
+
+// Handle preflight requests
+export async function OPTIONS(request: NextRequest) {
+  const origin = getOriginFromHeaders(request.headers);
+  return handleCorsPreflight(origin);
+}
 
 export async function GET(request: NextRequest) {
   try {
     // Получаем токен из заголовка Authorization
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { message: 'Токен авторизации не предоставлен' },
-        { status: 401 }
-      );
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Токен авторизации не предоставлен', 401, origin);
     }
 
     const token = authHeader.substring(7); // Убираем "Bearer "
@@ -20,34 +29,36 @@ export async function GET(request: NextRequest) {
     try {
       decoded = verifyToken(token);
     } catch (error) {
-      return NextResponse.json(
-        { message: error instanceof Error ? error.message : 'Недействительный токен' },
-        { status: 401 }
-      );
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse(error instanceof Error ? error.message : 'Недействительный токен', 401, origin);
     }
 
     const { userId } = decoded;
 
+    // Валидация userId
+    if (!userId || !Number.isFinite(userId)) {
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Недействительный токен пользователя', 401, origin);
+    }
+
     // Подключение к Redis
     await connectRedis();
 
-    // Находим пользователя
-    const user = await RedisDataManager.getUser(String(userId));
+    // Находим пользователя (ключи в Redis хранятся как user:user:NN)
+    const redisId = `user:${userId}`
+    const user = await RedisDataManager.getUser(redisId);
 
     if (!user) {
-      return NextResponse.json(
-        { message: 'Пользователь не найден' },
-        { status: 404 }
-      );
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Пользователь не найден', 404, origin);
     }
 
-    return NextResponse.json(user);
+    const origin = getOriginFromHeaders(request.headers);
+    return createCorsResponse(user, 200, origin);
 
   } catch (error) {
     console.error('Ошибка получения данных пользователя:', error);
-    return NextResponse.json(
-      { message: 'Внутренняя ошибка сервера' },
-      { status: 500 }
-    );
+    const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Внутренняя ошибка сервера', 500, origin);
   }
 }

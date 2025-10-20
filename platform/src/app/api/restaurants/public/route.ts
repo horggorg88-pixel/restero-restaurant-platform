@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { handleCorsPreflight, createCorsResponse, createCorsErrorResponse, getOriginFromHeaders } from '@/lib/cors';
+// Явно указываем что это динамический route
+export const dynamic = 'force-dynamic';
+
 // Моковые данные ресторанов для демонстрации
 const mockRestaurants = [
   {
@@ -85,6 +89,13 @@ const mockRestaurants = [
     bookingCount: 31
   }
 ];
+
+
+// Handle preflight requests
+export async function OPTIONS(request: NextRequest) {
+  const origin = getOriginFromHeaders(request.headers);
+  return handleCorsPreflight(origin);
+}
 
 export async function GET(request: NextRequest) {
   try {

@@ -54,14 +54,22 @@ const BookingManagementLink: React.FC<BookingManagementLinkProps> = ({
 
   const handleOpenBookingManagement = async () => {
     setIsLoading(true);
-    
+
     try {
-      // Переходим на страницу управления бронированиями в платформе
-      window.location.href = '/dashboard/booking-management';
-      
+      // Формируем адрес админки
+      const adminBase =
+        (process.env.NEXT_PUBLIC_ADMIN_URL && process.env.NEXT_PUBLIC_ADMIN_URL.trim()) ||
+        'http://localhost:3001';
+
+      // Пробрасываем restaurant_id через query, если он известен
+      const rid = restaurantId || localStorage.getItem('restaurant_id') || localStorage.getItem('restaurantId') || '';
+      const url = rid ? `${adminBase}/?restaurant_id=${encodeURIComponent(rid)}` : `${adminBase}/`;
+
+      // Переходим на страницу авторизации админки (там установим restaurant_id из query)
+      window.location.href = url;
     } catch (error) {
-      console.error('Ошибка при переходе в панель управления бронированиями:', error);
-      alert('Ошибка при переходе в панель управления бронированиями');
+      console.error('Ошибка при переходе в админ-панель:', error);
+      alert('Ошибка при переходе в админ-панель');
     } finally {
       setIsLoading(false);
     }

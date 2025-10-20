@@ -63,8 +63,12 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
       const data = await response.json();
 
       if (response.ok) {
-        // Показываем сообщение об успешной регистрации
-        alert('Регистрация успешна! Проверьте email для подтверждения аккаунта.');
+        // Сохраняем токен и переносим в кабинет
+        if (data.token) {
+          try {
+            localStorage.setItem('token', data.token);
+          } catch {}
+        }
         onSuccess?.();
       } else {
         setError(data.message || 'Ошибка регистрации');

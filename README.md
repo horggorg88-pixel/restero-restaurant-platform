@@ -22,14 +22,12 @@ npm run dev
 
 ### Основные
 - `npm run dev` - запуск фронтенд сервисов (платформа + админ)
-- `npm run dev:full` - запуск всех сервисов (требует PHP)
 - `npm run build` - сборка всех приложений
 - `npm run setup` - установка всех зависимостей
 
 ### Индивидуальные сервисы
 - `npm run dev:platform` - только платформа
 - `npm run dev:admin` - только админ-панель
-- `npm run dev:api` - только API (требует PHP)
 
 ### Docker
 - `npm run docker:dev` - Docker в режиме разработки
@@ -47,16 +45,26 @@ npm run dev
 - **Node.js**: >= 18.0.0
 - **npm**: >= 8.0.0
 
-### Для полного стека (`npm run dev:full`)
-- **Node.js**: >= 18.0.0
-- **npm**: >= 8.0.0
-- **PHP**: >= 8.1
-- **Composer**: >= 2.0
-- **MySQL**: >= 8.0
-
 ### Для Docker (`npm run docker:*`)
 - **Docker**: >= 20.0.0
 - **Docker Compose**: >= 2.0.0
+
+## Архитектура
+
+### Redis-Only Architecture
+Проект использует **Redis** как единственный источник данных:
+
+- **Next.js Platform** (TypeScript) - основной фронтенд
+- **React Admin Panel** (TypeScript) - админка  
+- **Redis Cloud** - база данных и кэш
+- **Next.js API Routes** - бэкенд API
+
+### Преимущества:
+- ✅ **Единый язык** - TypeScript везде
+- ✅ **Высокая производительность** - in-memory Redis
+- ✅ **Простота деплоя** - меньше сервисов
+- ✅ **Горизонтальное масштабирование**
+- ✅ **Автоматическая очистка** - TTL
 
 ## Структура проекта
 

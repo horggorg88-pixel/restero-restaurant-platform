@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+
+// Явно указываем что это динамический route
+export const dynamic = 'force-dynamic';
+import { handleCorsPreflight, createCorsResponse, createCorsErrorResponse, getOriginFromHeaders } from '@/lib/cors';
 interface GuestBookingData {
   restaurantId: string;
   date: string;
@@ -10,6 +14,13 @@ interface GuestBookingData {
   phone: string;
   email: string;
   comment?: string;
+}
+
+
+// Handle preflight requests
+export async function OPTIONS(request: NextRequest) {
+  const origin = getOriginFromHeaders(request.headers);
+  return handleCorsPreflight(origin);
 }
 
 export async function POST(request: NextRequest) {

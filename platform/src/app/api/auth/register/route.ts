@@ -1,6 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { handleCorsPreflight, createCorsResponse, createCorsErrorResponse, getOriginFromHeaders } from '@/lib/cors';
 import bcrypt from 'bcryptjs';
 import { RedisDataManager, connectRedis } from '@/lib/redis';
+import { User } from '@/lib/types';
+import { generateJWTToken } from '@/lib/auth';
+
+
+// Явно указываем что это динамический route
+export const dynamic = 'force-dynamic';
+
+// Handle preflight requests
+export async function OPTIONS(request: NextRequest) {
+  const origin = getOriginFromHeaders(request.headers);
+  return handleCorsPreflight(origin);
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,17 +21,13 @@ export async function POST(request: NextRequest) {
 
     // Валидация
     if (!firstName || !lastName || !email || !password) {
-      return NextResponse.json(
-        { message: 'Все поля обязательны' },
-        { status: 400 }
-      );
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Все поля обязательны', 400, origin);
     }
 
     if (password.length < 6) {
-      return NextResponse.json(
-        { message: 'Пароль должен содержать минимум 6 символов' },
-        { status: 400 }
-      );
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Пароль должен содержать минимум 6 символов', 400, origin);
     }
 
     // Подключение к Redis
@@ -28,10 +37,8 @@ export async function POST(request: NextRequest) {
     const existingUser = await RedisDataManager.getUserByEmail(email);
 
     if (existingUser) {
-      return NextResponse.json(
-        { message: 'Пользователь с таким email уже существует' },
-        { status: 400 }
-      );
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Пользователь с таким email уже существует', 400, origin);
     }
 
     // Хешируем пароль
@@ -41,7 +48,7 @@ export async function POST(request: NextRequest) {
     const userId = await RedisDataManager.generateId('user');
 
     // Создаем пользователя
-    const user = {
+    const user: User = {
       id: userId,
       firstName,
       lastName,
@@ -49,7 +56,7 @@ export async function POST(request: NextRequest) {
       password: hashedPassword,
       role: 'USER',
       isEmailVerified: true,
-      emailVerificationToken: null,
+      emailVerificationToken: undefined,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -57,19 +64,32 @@ export async function POST(request: NextRequest) {
     // Сохраняем пользователя в Redis
     await RedisDataManager.saveUser(user);
 
+    // Автовход: генерируем JWT токен на основе числовой части id
+    const numericUserId = (() => {
+      const parts = String(user.id).split(':');
+      const n = parseInt(parts[parts.length - 1] || '', 10);
+      return Number.isFinite(n) ? n : 0;
+    })();
+
+    const token = generateJWTToken({
+      userId: numericUserId,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName
+    });
+
     return NextResponse.json(
       { 
-        message: 'Регистрация успешна. Проверьте email для подтверждения аккаунта.',
-        userId: user.id 
+        message: 'Регистрация успешна',
+        userId: user.id,
+        token
       },
       { status: 201 }
     );
 
   } catch (error) {
     console.error('Ошибка регистрации:', error);
-    return NextResponse.json(
-      { message: 'Внутренняя ошибка сервера' },
-      { status: 500 }
-    );
+    const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Внутренняя ошибка сервера', 500, origin);
   }
 }

@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { handleCorsPreflight, createCorsResponse, createCorsErrorResponse, getOriginFromHeaders } from '@/lib/cors';
 import { BookingApiService } from '@/lib/booking-api';
 
+
+// Явно указываем что это динамический route
+export const dynamic = 'force-dynamic';
 // Проверка статуса интеграции с системой бронирований
+
+// Handle preflight requests
+export async function OPTIONS(request: NextRequest) {
+  const origin = getOriginFromHeaders(request.headers);
+  return handleCorsPreflight(origin);
+}
+
 export async function GET(request: NextRequest) {
   try {
     console.log('Проверка статуса интеграции с системой бронирований...');
@@ -17,7 +28,7 @@ export async function GET(request: NextRequest) {
       integration: {
         bookingApi: {
           status: apiStatus.success ? 'connected' : 'disconnected',
-          url: process.env.BOOKING_API_URL || 'http://localhost:8000/api',
+          url: process.env.BOOKING_API_URL || 'http://localhost:3000/api/booking',
           error: apiStatus.error
         },
         restaurants: {

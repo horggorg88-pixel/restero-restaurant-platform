@@ -1,207 +1,194 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { handleCorsPreflight, createCorsResponse, createCorsErrorResponse, getOriginFromHeaders } from '@/lib/cors';
+import { RedisDataManager, connectRedis } from '@/lib/redis';
+import { verifyToken } from '@/lib/auth';
 
-// Моковые данные ресторанов (те же что и в public route)
-const mockRestaurants = [
-  {
-    id: '1',
-    name: "Ресторан 'Золотой Дракон'",
-    description: "Уютный ресторан с традиционной китайской кухней в центре города. Мы предлагаем широкий выбор блюд, приготовленных по старинным рецептам с использованием только свежих ингредиентов.",
-    address: "ул. Тверская, 15, Москва",
-    phone: "+7 (495) 123-45-67",
-    email: "info@goldendragon.ru",
-    workingHours: "Пн-Вс: 11:00 - 23:00",
-    rating: 4.8,
-    photos: [
-      "/api/placeholder/800/600",
-      "/api/placeholder/400/300",
-      "/api/placeholder/400/300"
-    ],
-    cuisine: "Китайская кухня",
-    priceRange: "$$$",
-    capacity: 120,
-    isOpen: true,
-    viewCount: 156,
-    bookingCount: 23,
-    menu: [
-      {
-        category: "Закуски",
-        items: [
-          { name: "Пекинская утка", price: 1200, description: "Традиционная пекинская утка с блинами" },
-          { name: "Димсам", price: 450, description: "Парные пельмени с различными начинками" }
-        ]
-      },
-      {
-        category: "Основные блюда",
-        items: [
-          { name: "Кунг-пао", price: 800, description: "Острое блюдо с курицей и арахисом" },
-          { name: "Свинина в кисло-сладком соусе", price: 750, description: "Классическое блюдо китайской кухни" }
-        ]
-      }
-    ],
-    reviews: [
-      {
-        id: 1,
-        author: "Анна С.",
-        rating: 5,
-        text: "Отличный ресторан с вкусной едой и приятной атмосферой! Обязательно вернемся.",
-        date: "2024-01-15"
-      },
-      {
-        id: 2,
-        author: "Михаил К.",
-        rating: 4,
-        text: "Хорошая китайская кухня, быстрый сервис. Рекомендую пекинскую утку.",
-        date: "2024-01-10"
-      }
-    ]
-  },
-  {
-    id: '2',
-    name: "Bella Vista",
-    description: "Итальянский ресторан с панорамным видом на город и аутентичной кухней. Наши повара готовят блюда по традиционным итальянским рецептам.",
-    address: "пр. Мира, 25, Москва",
-    phone: "+7 (495) 234-56-78",
-    email: "info@bellavista.ru",
-    workingHours: "Пн-Вс: 12:00 - 24:00",
-    rating: 4.6,
-    photos: [
-      "/api/placeholder/800/600",
-      "/api/placeholder/400/300"
-    ],
-    cuisine: "Итальянская кухня",
-    priceRange: "$$$$",
-    capacity: 80,
-    isOpen: true,
-    viewCount: 89,
-    bookingCount: 15,
-    menu: [
-      {
-        category: "Паста",
-        items: [
-          { name: "Карбонара", price: 650, description: "Классическая паста с беконом и сливочным соусом" },
-          { name: "Болоньезе", price: 700, description: "Паста с мясным соусом по-болонски" }
-        ]
-      }
-    ],
-    reviews: [
-      {
-        id: 1,
-        author: "Елена В.",
-        rating: 5,
-        text: "Прекрасный вид и отличная итальянская кухня!",
-        date: "2024-01-12"
-      }
-    ]
-  },
-  {
-    id: '3',
-    name: "Сакура",
-    description: "Японский ресторан с суши-баром и традиционными блюдами. Свежие морепродукты и аутентичная японская атмосфера.",
-    address: "ул. Арбат, 10, Москва",
-    phone: "+7 (495) 345-67-89",
-    email: "info@sakura.ru",
-    workingHours: "Пн-Вс: 11:30 - 22:30",
-    rating: 4.7,
-    photos: [
-      "/api/placeholder/800/600",
-      "/api/placeholder/400/300",
-      "/api/placeholder/400/300"
-    ],
-    cuisine: "Японская кухня",
-    priceRange: "$$$",
-    capacity: 60,
-    isOpen: false,
-    viewCount: 134,
-    bookingCount: 18,
-    menu: [
-      {
-        category: "Суши и роллы",
-        items: [
-          { name: "Филадельфия", price: 450, description: "Классический ролл с лососем и сливочным сыром" },
-          { name: "Калифорния", price: 380, description: "Ролл с крабом и авокадо" }
-        ]
-      }
-    ],
-    reviews: [
-      {
-        id: 1,
-        author: "Дмитрий П.",
-        rating: 4,
-        text: "Хорошие суши, свежие ингредиенты.",
-        date: "2024-01-08"
-      }
-    ]
-  },
-  {
-    id: '4',
-    name: "Русский Двор",
-    description: "Традиционная русская кухня в атмосфере старинной усадьбы. Блины, борщ, пельмени и другие классические блюда русской кухни.",
-    address: "ул. Красная Площадь, 1, Москва",
-    phone: "+7 (495) 456-78-90",
-    email: "info@russkiydvor.ru",
-    workingHours: "Пн-Вс: 10:00 - 22:00",
-    rating: 4.5,
-    photos: [
-      "/api/placeholder/800/600",
-      "/api/placeholder/400/300"
-    ],
-    cuisine: "Русская кухня",
-    priceRange: "$$",
-    capacity: 100,
-    isOpen: true,
-    viewCount: 201,
-    bookingCount: 31,
-    menu: [
-      {
-        category: "Русские блюда",
-        items: [
-          { name: "Борщ", price: 350, description: "Классический украинский борщ" },
-          { name: "Пельмени", price: 450, description: "Домашние пельмени с мясом" }
-        ]
-      }
-    ],
-    reviews: [
-      {
-        id: 1,
-        author: "Ольга М.",
-        rating: 5,
-        text: "Аутентичная русская кухня, очень вкусно!",
-        date: "2024-01-14"
-      }
-    ]
-  }
-];
+// Явно указываем что это динамический route
+export const dynamic = 'force-dynamic';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+// Удаление ресторана
+
+// Handle preflight requests
+export async function OPTIONS(request: NextRequest) {
+  const origin = getOriginFromHeaders(request.headers);
+  return handleCorsPreflight(origin);
+}
+
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const restaurantId = params.id;
-    
-    // Находим ресторан по ID
-    const restaurant = mockRestaurants.find(r => r.id === restaurantId);
-    
-    if (!restaurant) {
-      return NextResponse.json(
-        { success: false, message: 'Ресторан не найден' },
-        { status: 404 }
-      );
+    // Получаем токен из заголовка Authorization
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Токен авторизации не предоставлен', 401, origin);
     }
 
-    // Увеличиваем счетчик просмотров (в реальном приложении это будет в базе данных)
-    restaurant.viewCount += 1;
+    const token = authHeader.substring(7);
+    let decoded;
+    try {
+      decoded = verifyToken(token);
+    } catch (error) {
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse(error instanceof Error ? error.message : 'Недействительный токен', 401, origin);
+    }
+
+    const { userId } = decoded;
+    const restaurantId = params.id;
+
+    // Подключение к Redis
+    await connectRedis();
+
+    // Проверяем, что ресторан существует и принадлежит пользователю
+    const restaurant = await RedisDataManager.getRestaurant(restaurantId);
+    if (!restaurant) {
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Ресторан не найден', 404, origin);
+    }
+
+    if (restaurant.ownerId !== String(userId)) {
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('У вас нет прав для удаления этого ресторана', 403, origin);
+    }
+
+    // Удаляем ресторан
+    await RedisDataManager.deleteRestaurant(restaurantId);
+
+    const origin = getOriginFromHeaders(request.headers);
+    return createCorsResponse({
+      message: 'Ресторан удален успешно'
+    }, 200, origin);
+
+  } catch (error) {
+    console.error('Ошибка удаления ресторана:', error);
+    const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Внутренняя ошибка сервера', 500, origin);
+  }
+}
+
+// Обновление ресторана
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    // Получаем токен из заголовка Authorization
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Токен авторизации не предоставлен', 401, origin);
+    }
+
+    const token = authHeader.substring(7);
+    let decoded;
+    try {
+      decoded = verifyToken(token);
+    } catch (error) {
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse(error instanceof Error ? error.message : 'Недействительный токен', 401, origin);
+    }
+
+    const { userId } = decoded;
+    const restaurantId = params.id;
+    const body = await request.json();
+
+    // Подключение к Redis
+    await connectRedis();
+
+    // Проверяем, что ресторан существует и принадлежит пользователю
+    const existingRestaurant = await RedisDataManager.getRestaurant(restaurantId);
+    if (!existingRestaurant) {
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Ресторан не найден', 404, origin);
+    }
+
+    if (existingRestaurant.ownerId !== String(userId)) {
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('У вас нет прав для редактирования этого ресторана', 403, origin);
+    }
+
+    // Обновляем ресторан
+    const updatedRestaurant = {
+      ...existingRestaurant,
+      name: body.name || existingRestaurant.name,
+      description: body.description || existingRestaurant.description,
+      address: body.address || existingRestaurant.address,
+      phone: body.phone || existingRestaurant.phone,
+      email: body.email || existingRestaurant.email,
+      website: body.website || existingRestaurant.website,
+      updatedAt: new Date().toISOString()
+    };
+
+    await RedisDataManager.updateRestaurant(restaurantId, updatedRestaurant);
 
     return NextResponse.json({
-      success: true,
-      data: restaurant
+      message: 'Ресторан обновлен успешно',
+      restaurant: updatedRestaurant
+    });
+
+  } catch (error) {
+    console.error('Ошибка обновления ресторана:', error);
+    const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Внутренняя ошибка сервера', 500, origin);
+  }
+}
+
+// Получение информации о ресторане
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    // Получаем токен из заголовка Authorization
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Токен авторизации не предоставлен', 401, origin);
+    }
+
+    const token = authHeader.substring(7);
+    let decoded;
+    try {
+      decoded = verifyToken(token);
+    } catch (error) {
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse(error instanceof Error ? error.message : 'Недействительный токен', 401, origin);
+    }
+
+    const { userId } = decoded;
+    const restaurantId = params.id;
+    
+    // Подключение к Redis
+    await connectRedis();
+    
+    // Получаем ресторан
+    const restaurant = await RedisDataManager.getRestaurant(restaurantId);
+    if (!restaurant) {
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Ресторан не найден', 404, origin);
+    }
+
+    if (restaurant.ownerId !== String(userId)) {
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('У вас нет прав для просмотра этого ресторана', 403, origin);
+    }
+
+    // Получаем статистику ресторана
+    const bookings = await RedisDataManager.getRestaurantBookings(restaurantId);
+    const accesses = await RedisDataManager.getRestaurantAccesses(restaurantId);
+
+    return NextResponse.json({
+      id: restaurant.id,
+      name: restaurant.name,
+      address: restaurant.address,
+      description: restaurant.description,
+      phone: restaurant.phone,
+      email: restaurant.email,
+      website: restaurant.website,
+      photo: restaurant.photo,
+      isActive: restaurant.isActive,
+      createdAt: restaurant.createdAt,
+      updatedAt: restaurant.updatedAt,
+      bookingsCount: bookings.length,
+      accessesCount: accesses.length
     });
 
   } catch (error) {
     console.error('Ошибка получения ресторана:', error);
-    return NextResponse.json(
-      { success: false, message: 'Ошибка сервера' },
-      { status: 500 }
-    );
+    const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Внутренняя ошибка сервера', 500, origin);
   }
 }

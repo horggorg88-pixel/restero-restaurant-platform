@@ -7,6 +7,9 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Restero - Система управления бронированиями для ресторанов',
   description: 'Следите за загрузкой в реальном времени, управляйте бронированиями легко и быстро. Простая система бронирования столиков для ресторанов.',
+  icons: {
+    icon: '/favicon.svg'
+  }
 }
 
 export default function RootLayout({

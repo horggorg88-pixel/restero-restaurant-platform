@@ -1,18 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { handleCorsPreflight, createCorsResponse, createCorsErrorResponse, getOriginFromHeaders } from '@/lib/cors';
 import { RedisDataManager, connectRedis } from '@/lib/redis';
 import { verifyToken } from '@/lib/auth';
 import { BookingApiService } from '@/lib/booking-api';
+import { Restaurant, CreateRestaurantData } from '@/lib/types';
+
+// Явно указываем что это динамический route
+export const dynamic = 'force-dynamic';
 
 // Получение списка ресторанов пользователя
+
+// Handle preflight requests
+export async function OPTIONS(request: NextRequest) {
+  const origin = getOriginFromHeaders(request.headers);
+  return handleCorsPreflight(origin);
+}
+
 export async function GET(request: NextRequest) {
   try {
     // Получаем токен из заголовка Authorization
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { message: 'Токен авторизации не предоставлен' },
-        { status: 401 }
-      );
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Токен авторизации не предоставлен', 401, origin);
     }
 
     const token = authHeader.substring(7);
@@ -20,10 +30,8 @@ export async function GET(request: NextRequest) {
     try {
       decoded = verifyToken(token);
     } catch (error) {
-      return NextResponse.json(
-        { message: error instanceof Error ? error.message : 'Недействительный токен' },
-        { status: 401 }
-      );
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse(error instanceof Error ? error.message : 'Недействительный токен', 401, origin);
     }
 
     const { userId } = decoded;
@@ -34,30 +42,39 @@ export async function GET(request: NextRequest) {
     // Получаем рестораны пользователя
     const restaurants = await RedisDataManager.getUserRestaurants(String(userId));
 
-    // Форматируем данные для фронтенда
-    const formattedRestaurants = restaurants.map(restaurant => ({
-      id: restaurant.id,
-      name: restaurant.name,
-      address: restaurant.address,
-      photo: restaurant.photo,
-      description: restaurant.description,
-      phone: restaurant.phone,
-      email: restaurant.email,
-      website: restaurant.website,
-      isActive: restaurant.isActive,
-      createdAt: restaurant.createdAt,
-      bookingsCount: 0,
-      accessesCount: 0
+    // Форматируем данные для фронтенда с реальными счетчиками
+    const formattedRestaurants = await Promise.all(restaurants.map(async restaurant => {
+      // Получаем количество сотрудников для этого ресторана
+      const accesses = await RedisDataManager.getRestaurantAccesses(restaurant.id);
+      const accessesCount = accesses ? accesses.length : 0;
+      
+      // Получаем количество бронирований для этого ресторана
+      const bookings = await RedisDataManager.getRestaurantBookings(restaurant.id);
+      const bookingsCount = bookings ? bookings.length : 0;
+      
+      return {
+        id: restaurant.id,
+        name: restaurant.name,
+        address: restaurant.address,
+        photo: restaurant.photo,
+        description: restaurant.description,
+        phone: restaurant.phone,
+        email: restaurant.email,
+        website: restaurant.website,
+        isActive: restaurant.isActive,
+        createdAt: restaurant.createdAt,
+        bookingsCount,
+        accessesCount
+      };
     }));
 
-    return NextResponse.json(formattedRestaurants);
+    const origin = getOriginFromHeaders(request.headers);
+    return createCorsResponse(formattedRestaurants, 200, origin);
 
   } catch (error) {
     console.error('Ошибка получения ресторанов:', error);
-    return NextResponse.json(
-      { message: 'Внутренняя ошибка сервера' },
-      { status: 500 }
-    );
+    const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Внутренняя ошибка сервера', 500, origin);
   }
 }
 
@@ -67,10 +84,8 @@ export async function POST(request: NextRequest) {
     // Получаем токен из заголовка Authorization
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { message: 'Токен авторизации не предоставлен' },
-        { status: 401 }
-      );
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Токен авторизации не предоставлен', 401, origin);
     }
 
     const token = authHeader.substring(7);
@@ -78,10 +93,8 @@ export async function POST(request: NextRequest) {
     try {
       decoded = verifyToken(token);
     } catch (error) {
-      return NextResponse.json(
-        { message: error instanceof Error ? error.message : 'Недействительный токен' },
-        { status: 401 }
-      );
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse(error instanceof Error ? error.message : 'Недействительный токен', 401, origin);
     }
 
     const { userId } = decoded;
@@ -98,10 +111,8 @@ export async function POST(request: NextRequest) {
 
     // Валидация
     if (!name || !address) {
-      return NextResponse.json(
-        { message: 'Название и адрес обязательны' },
-        { status: 400 }
-      );
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Название и адрес обязательны', 400, origin);
     }
 
     // Подключение к Redis
@@ -118,15 +129,15 @@ export async function POST(request: NextRequest) {
     const restaurantId = await RedisDataManager.generateId('restaurant');
 
     // Создаем ресторан
-    const restaurant = {
+    const restaurant: Restaurant = {
       id: restaurantId,
       name,
       address,
-      description: description || null,
-      phone: phone || null,
-      email: email || null,
-      website: website || null,
-      photo: photoUrl,
+      description: description || undefined,
+      phone: phone || undefined,
+      email: email || undefined,
+      website: website || undefined,
+      photo: photoUrl || undefined,
       ownerId: String(userId),
       isActive: true,
       createdAt: new Date().toISOString(),
@@ -182,9 +193,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Ошибка создания ресторана:', error);
-    return NextResponse.json(
-      { message: 'Внутренняя ошибка сервера' },
-      { status: 500 }
-    );
+    const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Внутренняя ошибка сервера', 500, origin);
   }
 }

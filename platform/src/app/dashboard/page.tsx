@@ -15,7 +15,7 @@ import {
   CreditCard,
   BarChart3
 } from 'lucide-react';
-import BookingManagementLink from '@/components/BookingManagementLink';
+// import BookingManagementLink from '@/components/BookingManagementLink';
 
 interface User {
   id: number;
@@ -169,16 +169,7 @@ const DashboardPage = () => {
 
         </div>
 
-        {/* Booking Management */}
-        <div className="mb-6 sm:mb-8">
-          <div className="grid grid-cols-1 gap-6">
-            <BookingManagementLink 
-              restaurantId="1"
-              restaurantName="Мой ресторан"
-              bookingCount={12}
-            />
-          </div>
-        </div>
+        {/* Блок управления бронированиями удален как дублирующий функционал ниже */}
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 gap-4 sm:gap-6">

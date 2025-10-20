@@ -23,7 +23,7 @@ export interface BookingApiResponse {
 }
 
 export class BookingApiService {
-  private static readonly BOOKING_API_URL = process.env.BOOKING_API_URL || 'http://localhost:8000/api';
+  private static readonly BOOKING_API_URL = process.env.BOOKING_API_URL || 'http://localhost:3000/api/booking';
   private static readonly BOOKING_API_KEY = process.env.BOOKING_API_KEY || 'default-api-key';
 
   /**
@@ -163,7 +163,7 @@ export class BookingApiService {
     try {
       console.log('Проверка статуса API бронирований...');
       
-      const response = await fetch(`${this.BOOKING_API_URL}/health`, {
+      const response = await fetch(`${this.BOOKING_API_URL}/status`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json'

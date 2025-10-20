@@ -1,15 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+
+// Явно указываем что это динамический route
+export const dynamic = 'force-dynamic';
+import { handleCorsPreflight, createCorsResponse, createCorsErrorResponse, getOriginFromHeaders } from '@/lib/cors';
 // Активация доступа по токену
+
+// Handle preflight requests
+export async function OPTIONS(request: NextRequest) {
+  const origin = getOriginFromHeaders(request.headers);
+  return handleCorsPreflight(origin);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { token } = await request.json();
 
     if (!token) {
-      return NextResponse.json(
-        { message: 'Токен доступа обязателен' },
-        { status: 400 }
-      );
+      const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Токен доступа обязателен', 400, origin);
     }
 
     // Демо-ответ
@@ -27,9 +36,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Ошибка активации доступа:', error);
-    return NextResponse.json(
-      { message: 'Внутренняя ошибка сервера' },
-      { status: 500 }
-    );
+    const origin = getOriginFromHeaders(request.headers);
+    return createCorsErrorResponse('Внутренняя ошибка сервера', 500, origin);
   }
 }

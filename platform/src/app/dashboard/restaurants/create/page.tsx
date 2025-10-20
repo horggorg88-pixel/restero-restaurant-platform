@@ -230,7 +230,7 @@ const CreateRestaurantPage = () => {
                     id="website"
                     name="website"
                     type="url"
-                    placeholder="https://example.com"
+                    placeholder="https://restaurant-website.com"
                     value={formData.website}
                     onChange={handleInputChange}
                   />
