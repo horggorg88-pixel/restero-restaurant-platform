@@ -15,7 +15,12 @@ import {
   CreatePaymentData
 } from './types'
 
-const redisUrl = process.env.REDIS_URL || 'redis://default:lPz6dcqqZaZNIDtQ2f2jHeDwYAHdpPvL@redis-19619.c241.us-east-1-4.ec2.redns.redis-cloud.com:19619'
+// Используем только облачный Redis - без fallback на локальный
+const redisUrl = process.env.REDIS_URL
+
+if (!redisUrl) {
+  throw new Error('REDIS_URL environment variable is required')
+}
 
 export const redis = createClient({
   url: redisUrl,

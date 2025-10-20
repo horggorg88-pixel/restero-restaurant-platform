@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # Next.js Platform (разработка)
+  platform:
+    build:
+      context: ./platform
+      dockerfile: Dockerfile.dev
+    container_name: restero_platform_dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:3000
+      - NEXT_PUBLIC_ADMIN_URL=http://localhost:3001
+      - REDIS_URL=${REDIS_URL}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    volumes:
+      - ./platform/src:/app/src
+      - ./platform/public:/app/public
+    networks:
+      - restero_network
+
+  # React Admin Panel (разработка)
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    container_name: restero_admin_dev
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - REACT_APP_API_URL=http://localhost:3000
+      - REACT_APP_PLATFORM_URL=http://localhost:3000
+      - VITE_PLATFORM_URL=http://localhost:3000
+    depends_on:
+      - platform
+    volumes:
+      - ./admin:/app
+      - admin_node_modules_dev:/app/node_modules
+    networks:
+      - restero_network
+
+volumes:
+  platform_node_modules_dev:
+    driver: local
+  admin_node_modules_dev:
+    driver: local
+
+networks:
+  restero_network:
+    driver: bridge

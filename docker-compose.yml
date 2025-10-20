@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # Основная платформа (Next.js API + Frontend)
+  platform:
+    build:
+      context: ./platform
+      dockerfile: Dockerfile
+      args:
+        REDIS_URL: ${REDIS_URL}
+    container_name: restero_platform_prod
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - REDIS_URL=${REDIS_URL}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-here}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-your-email@gmail.com}
+      - SMTP_PASS=${SMTP_PASS:-your-app-password}
+      - FROM_EMAIL=${FROM_EMAIL:-noreply@restero.com}
+      - FROM_NAME=${FROM_NAME:-Restero}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-your-nextauth-secret}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3000/api}
+    networks:
+      - restero_network
+
+  # Админ панель (React + Vite)
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    container_name: restero_admin_prod
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - platform
+    networks:
+      - restero_network
+
+networks:
+  restero_network:
+    driver: bridge
