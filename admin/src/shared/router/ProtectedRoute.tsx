@@ -1,6 +1,7 @@
 import { useAuth } from "@shared/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { ReactNode, useEffect, useState } from "react";
+import { getPlatformUrl } from '@/config/api';
 
 interface ProtectedRouteProps {
   element: ReactNode;
@@ -25,8 +26,7 @@ const ProtectedRoute = ({ element }: ProtectedRouteProps) => {
       // Если это сотрудник, проверяем доступ к выбранному ресторану
       if (userRole) {
         try {
-          const base = (import.meta.env.VITE_PLATFORM_URL as string | undefined);
-          const platformUrl = base && base !== 'undefined' && base.trim().length ? base : 'http://localhost:3000';
+          const platformUrl = getPlatformUrl();
           // Берем restaurantId из localStorage (поддерживаем оба ключа на всякий случай)
           const restaurantId = localStorage.getItem('restaurant_id') || localStorage.getItem('restaurantId') || '';
 
