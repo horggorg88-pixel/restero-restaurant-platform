@@ -77,7 +77,24 @@ const BookingManagementPage = () => {
         return;
       }
 
-      const adminUrl = `${process.env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3001'}/?token=${encodeURIComponent(token)}`;
+      // Определяем базовый URL для админ панели
+      let adminBase = 'http://localhost:3001'; // fallback для разработки
+      
+      // Проверяем переменную окружения
+      if (process.env.NEXT_PUBLIC_ADMIN_URL) {
+        adminBase = process.env.NEXT_PUBLIC_ADMIN_URL.trim();
+      } else {
+        // Если переменная не задана, определяем URL на основе текущего домена
+        const currentHost = window.location.hostname;
+        
+        if (currentHost === '37.1.210.31') {
+          adminBase = 'http://37.1.210.31:3001';
+        } else if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
+          adminBase = `http://${currentHost}:3001`;
+        }
+      }
+
+      const adminUrl = `${adminBase}/?token=${encodeURIComponent(token)}`;
       window.open(adminUrl, '_blank', 'noopener,noreferrer');
       
     } catch (error) {
